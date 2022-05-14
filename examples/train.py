@@ -10,7 +10,7 @@ from accelerate import notebook_launcher
 from models import LeNet
 from loader import Dataloader
 from metrics import accuracy
-from torchx import seed_all, Trainer
+from torchx import Trainer, seed_all, save_state, save_model
 
 
 def main(*args):
@@ -18,11 +18,11 @@ def main(*args):
     seed_all(args.seed)
 
     dataloader = Dataloader(
-        root = args.data_dir,
-        batch_size = args.batch_size,
-        num_workers = args.num_workers,
-        shuffle = [False, False],
-        pin_memory = True
+        root=args.data_dir,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        shuffle=[False, False],
+        pin_memory=True
     )
 
     model = LeNet(1, 10)
@@ -31,14 +31,15 @@ def main(*args):
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=dataloader.steps_per_epoch, T_mult=1)
 
     trainer = Trainer(
-        model = model,
-        train_dataloader = dataloader.train_dataloader,
-        val_dataloader = dataloader.val_dataloader,
-        optimizer = optimizer,
-        scheduler = scheduler,
-        criterion = criterion,
-        metrics = {'acc': accuracy},
-        config = args.__dict__
+        model=model,
+        train_dataloader=dataloader.train_dataloader,
+        val_dataloader=dataloader.val_dataloader,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        criterion=criterion,
+        config=args.__dict__,
+        metrics={'acc': accuracy},
+        callbacks={'on_checkpoint': save_state}
     )
 
     trainer.fit()

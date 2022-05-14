@@ -8,13 +8,20 @@ from torchx.utils import StatsTracker
 __all__ = ['Trainer']
 
 
+callbacks_whitelist = [
+    'compute_loss',
+    'compute_metrics',
+    'on_checkpoint'
+]
+
+
 class Trainer:
-    def __init__(self, model, train_dataloader, val_dataloader, optimizer, scheduler, criterion, metrics={}, config={}):
-        self.accelerator = Accelerator(
-            log_with = 'all',
-            logging_dir = Path(config.get('log_dir', Path.cwd()/'records'))
-        )
-        if self.is_main_process: self.init_trackers('logs')
+    def __init__(self, model, train_dataloader, val_dataloader, optimizer, scheduler, criterion, config={}, metrics={}, callbacks={}):
+        version = 'version' + str(config.get('version', 0))
+        self.log_dir = Path(config.get('log_dir', Path.cwd()/'records'))/version
+
+        self.accelerator = Accelerator(log_with='all', logging_dir=self.log_dir.parent)
+        if self.is_main_process: self.init_trackers(version)
 
         self.model = self.prepare(model)
         self.train_dataloader = self.prepare(train_dataloader)
@@ -22,8 +29,12 @@ class Trainer:
         self.optimizer = self.prepare(optimizer)
         self.scheduler = self.prepare(scheduler)
         self.criterion = criterion
-        self.metrics = metrics
         self.config = Dict(config)
+        self.metrics = metrics
+
+        for k, fn in callbacks.items():
+            if k not in callbacks_whitelist: continue
+            setattr(Trainer, k, fn)
 
     def __getattr__(self, x):
         return getattr(self.accelerator, x)
@@ -39,7 +50,7 @@ class Trainer:
             self.print(f'epoch: {epoch}/{num_epochs}')
             train_stats = self.train(epoch)
             val_stats = self.validate(epoch)
-            self.save_model(num_epochs, epoch, train_stats, val_stats)
+            self.on_checkpoint(num_epochs, epoch, train_stats, val_stats)
         self.print('-'*10, 'Finish Training', '-'*10)
         self.end_training()
 
@@ -85,15 +96,5 @@ class Trainer:
     def compute_metrics(self, *args):
         return {k: fn(*args) for k, fn in self.metrics.items()}
 
-    def save_model(self, *args):
-        self.wait_for_everyone()
-        model = self.unwrap_model(self.model)
-
-        save_dir = self.logging_dir/'states'
-        save_dir.mkdir(parents=True, exist_ok=True)
-
-        self.save(model.state_dict(), save_dir/'epoch_{:0>{}d}-tl_{:.4f}-vl_{:.4f}.pth'.format(
-            args[1], len(str(args[0] - 1)),
-            args[2].train_loss.avg,
-            args[3].val_loss.avg
-        ))
+    def on_checkpoint(self, *args):
+        pass
