@@ -8,3 +8,6 @@ __pycache__/
 examples/*
 !examples/**/*.py
 !examples/**/*.ipynb
+*.egg-info/
+build/
+dist/
