@@ -15,6 +15,6 @@ setup(
     long_description_content_type = 'text/markdown',
     python_requires = '>=3.7.0',
     install_requires = ROOT.joinpath('requirements.txt').read_text().splitlines(),
-    packages = find_packages(ROOT/'torchx'),
+    packages = find_packages(),
     include_package_data = True
 )
