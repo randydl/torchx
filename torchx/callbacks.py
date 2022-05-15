@@ -12,7 +12,7 @@ __all__ = [
 
 def save_state(trainer, num_epochs, epoch, train_stats, val_stats):
     trainer.wait_for_everyone()
-    fname = f'epoch{epoch:0>{len(str(num_epochs-1))}d}'
+    fname = 'epoch{:0>{}d}'.format(epoch, len(str(num_epochs-1)))
     trainer.save_state(trainer.log_dir/fname)
 
 

@@ -56,7 +56,10 @@ class StatsTracker:
         for k, v in dic.items(): self.update(k, v, n)
 
     def __getattr__(self, x):
-        if x in self.stats.keys(): return self.stats[x]
+        if x in self.stats.keys():
+            return self.stats[x]
+        elif self.prefix + x in self.stats.keys():
+            return self.stats[self.prefix + x]
         return Dict({k: getattr(v, x) for k, v in self.stats.items()})
 
     def __repr__(self):
