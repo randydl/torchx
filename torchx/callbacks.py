@@ -11,6 +11,7 @@ __all__ = [
 
 
 def save_state(trainer, num_epochs, epoch, train_stats, val_stats):
+    trainer.wait_for_everyone()
     fname = f'epoch{epoch:0>{len(str(num_epochs-1))}d}'
     trainer.save_state(trainer.log_dir/fname)
 

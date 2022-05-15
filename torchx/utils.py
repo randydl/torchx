@@ -45,11 +45,12 @@ class AverageMeter:
 
 
 class StatsTracker:
-    def __init__(self):
+    def __init__(self, prefix=None, sep='_'):
         self.stats = defaultdict(AverageMeter)
+        self.prefix = '' if prefix is None else prefix + sep
 
     def update(self, key, val, n=1):
-        self.stats[key].update(val, n)
+        self.stats[self.prefix + key].update(val, n)
 
     def update_dict(self, dic, n=1):
         for k, v in dic.items(): self.update(k, v, n)

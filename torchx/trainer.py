@@ -56,7 +56,7 @@ class Trainer:
 
     def train(self, epoch):
         self.model.train()
-        stats = StatsTracker()
+        stats = StatsTracker('train')
         for step, (inputs, targets) in enumerate(self.train_dataloader):
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
@@ -66,16 +66,18 @@ class Trainer:
             self.optimizer.step()
             self.scheduler.step()
 
-            stats.update('train_loss', loss, len(inputs))
-            stats.update_dict({f'train_{k}': v for k, v in metrics.items()}, len(inputs))
-            self.log(dict(stats.avg, **{'lr': self.last_lr}), epoch * len(self.train_dataloader) + step)
+            stats.update_dict(Dict({'loss': loss}, metrics), len(inputs))
+            self.log(
+                Dict(stats.avg, {'lr': self.last_lr}, {f'{stats.prefix}epoch': epoch}),
+                epoch * len(self.train_dataloader) + step
+            )
         self.print(stats)
         return stats
 
     @torch.no_grad()
     def validate(self, epoch):
         self.model.eval()
-        stats = StatsTracker()
+        stats = StatsTracker('val')
         for step, (inputs, targets) in enumerate(self.val_dataloader):
             outputs = self.model(inputs)
             outputs = self.gather(outputs)
@@ -83,9 +85,11 @@ class Trainer:
             loss = self.compute_loss(outputs, targets)
             metrics = self.compute_metrics(outputs, targets)
 
-            stats.update('val_loss', loss, len(inputs))
-            stats.update_dict({f'val_{k}': v for k, v in metrics.items()}, len(inputs))
-            self.log(stats.avg, epoch * len(self.val_dataloader) + step)
+            stats.update_dict(Dict({'loss': loss}, metrics), len(inputs))
+            self.log(
+                Dict(stats.avg, {f'{stats.prefix}epoch': epoch}),
+                epoch * len(self.val_dataloader) + step
+            )
         self.print(stats)
         return stats
 
