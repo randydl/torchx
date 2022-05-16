@@ -58,4 +58,4 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
 
-    notebook_launcher(main, (args,), num_processes=2)
+    notebook_launcher(main, (args,), num_processes=1)

@@ -17,7 +17,7 @@ callbacks_whitelist = [
 
 class Trainer:
     def __init__(self, model, train_dataloader, val_dataloader, optimizer, scheduler, criterion, config={}, metrics={}, callbacks={}):
-        version = 'version' + str(config.get('version', 0))
+        version = 'version_' + str(config.get('version', 0))
         self.log_dir = Path(config.get('log_dir', Path.cwd()/'records'))/version
 
         self.accelerator = Accelerator(log_with='all', logging_dir=self.log_dir.parent)

@@ -12,15 +12,15 @@ __all__ = [
 
 def save_state(trainer, num_epochs, epoch, train_stats, val_stats):
     trainer.wait_for_everyone()
-    fname = 'epoch{:0>{}d}'.format(epoch, len(str(num_epochs-1)))
+    fname = 'epoch_{}'.format(epoch)
     trainer.save_state(trainer.log_dir/fname)
 
 
 def save_model(trainer, num_epochs, epoch, train_stats, val_stats):
     trainer.wait_for_everyone()
     model = trainer.unwrap_model(trainer.model)
-    fname = 'epoch{:0>{}d}-tl{:.4f}-vl{:.4f}.pth'.format(
-        epoch, len(str(num_epochs-1)),
+    fname = 'epoch_{}-tl_{:.4f}-vl_{:.4f}.pth'.format(
+        epoch,
         train_stats.train_loss.avg,
         val_stats.val_loss.avg
     )
