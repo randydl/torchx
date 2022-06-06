@@ -56,6 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--num_processes', type=int, default=1)
     args = parser.parse_args()
 
-    notebook_launcher(main, (args,), num_processes=1)
+    notebook_launcher(main, (args,), num_processes=args.num_processes)
