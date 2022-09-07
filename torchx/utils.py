@@ -10,7 +10,7 @@ __all__ = [
     'seed_all',
     'AverageMeter',
     'StatsTracker',
-    'BalanceClassSampler'
+    'BalancedSampler'
 ]
 
 
@@ -66,26 +66,29 @@ class StatsTracker:
         return ', '.join([f'{k}: {v:.4f}' for k, v in self.avg.items()])
 
 
-class BalanceClassSampler(torch.utils.data.Sampler):
-    def __init__(self, inputs, mode=0, get_labels=None):
+class BalancedSampler(torch.utils.data.Sampler):
+    def __init__(self, inputs, sampling_mode='same', get_labels=None):
         labels = inputs if get_labels is None else get_labels(inputs)
         labels = pd.Series(labels)
-        nclass = len(labels.unique())
         counts = labels.value_counts()
 
-        if mode < 0:
-            length = nclass * counts.min()
-        elif mode > 0:
-            length = nclass * counts.max()
-        else:
+        if sampling_mode == 'down':
+            length = len(counts) * counts.min()
+        elif sampling_mode == 'over':
+            length = len(counts) * counts.max()
+        elif sampling_mode == 'same':
             length = len(labels)
+        elif isinstance(sampling_mode, int) and sampling_mode > 0:
+            length = sampling_mode
+        else:
+            raise ValueError("sampling_mode must be one of ['down', 'over', 'same'] or a positive integer")
 
         self.length = length
-        self.weights = torch.as_tensor(1 / counts[labels].values)
+        self.weights = 1 / counts[labels].values
 
     def __iter__(self):
-        indices = torch.multinomial(self.weights, self.length, replacement=True)
-        return iter(indices.tolist())
+        sample = pd.Series(range(len(self.weights))).sample(self.length, weights=self.weights, replace=True)
+        return iter(sample.tolist())
 
     def __len__(self):
         return self.length
