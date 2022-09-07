@@ -10,17 +10,18 @@ __all__ = [
     'seed_all',
     'AverageMeter',
     'StatsTracker',
-    'BalancedSampler'
+    'BalancedSampler',
+    'DatasetFromSampler',
 ]
 
 
-def seed_all(seed=42, deterministic=True, benchmark=False):
+def seed_all(seed=42, benchmark=False, deterministic=True):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = deterministic
     torch.backends.cudnn.benchmark = benchmark
+    torch.backends.cudnn.deterministic = deterministic
 
 
 class AverageMeter:
@@ -69,8 +70,7 @@ class StatsTracker:
 class BalancedSampler(torch.utils.data.Sampler):
     def __init__(self, inputs, sampling_mode='same', get_labels=None):
         labels = inputs if get_labels is None else get_labels(inputs)
-        labels = pd.Series(labels)
-        counts = labels.value_counts()
+        counts = np.unique(labels, return_counts=True)[-1]
 
         if sampling_mode == 'down':
             length = len(counts) * counts.min()
@@ -84,11 +84,25 @@ class BalancedSampler(torch.utils.data.Sampler):
             raise ValueError("sampling_mode must be one of ['down', 'over', 'same'] or a positive integer")
 
         self.length = length
-        self.weights = 1 / counts[labels].values
+        self.weights = 1 / counts[labels] / len(counts)
 
     def __iter__(self):
-        sample = pd.Series(range(len(self.weights))).sample(self.length, weights=self.weights, replace=True)
+        indexs = range(len(self.weights))
+        sample = np.random.choice(indexs, self.length, replace=True, p=self.weights)
         return iter(sample.tolist())
 
     def __len__(self):
         return self.length
+
+
+class DatasetFromSampler(torch.utils.data.Dataset):
+    def __init__(self, dataset, sampler):
+        self.dataset = dataset
+        self.sampler = sampler
+
+    def __getitem__(self, index):
+        indexs = list(self.sampler)
+        return self.dataset[indexs[index]]
+
+    def __len__(self):
+        return len(self.sampler)
