@@ -26,6 +26,7 @@ def main(*args):
     )
 
     model = LeNet(1, 10)
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=dataloader.steps_per_epoch, T_mult=1)

@@ -1,8 +1,12 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parents[1]))
+
 import torch
 import torchvision.transforms as T
 from torchvision.datasets import MNIST
-from pathlib import Path
 from addict import Dict
+from torchx import BalancedSampler, DatasetFromSampler
 
 
 __all__ = ['Dataloader']
@@ -26,7 +30,10 @@ class Dataloader:
             T.RandomHorizontalFlip(),
             T.Normalize((0.1307,), (0.3081,))
         ])
-        return MNIST(self.root, train=True, download=True, transform=transform)
+        dataset = MNIST(self.root, train=True, download=True, transform=transform)
+        sampler = BalancedSampler(dataset.targets, sampling_mode='over')
+        dataset = DatasetFromSampler(dataset, sampler)
+        return dataset
 
     @property
     def val_dataset(self):
@@ -59,10 +66,6 @@ class Dataloader:
 
 
 if __name__ == '__main__':
-    import sys
-    sys.path.append(str(Path(__file__).parents[1]))
-
-
     dataloader = Dataloader(
         root = Path(__file__).parent/'data',
         batch_size = 64,
